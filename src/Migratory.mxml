@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+	A flocking behavior simulator
+	@author Brandon Heyer
+-->
+
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:graphics2D="engine.graphics2D.*"
+			   frameRate="100"			   
+			   creationComplete="onCreationCompleteHandler(event)">
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+			
+		s|Label { fontWeight: bold; }	
+	</fx:Style>
+	
+	<fx:Script>	
+	<![CDATA[
+	import engine.graphics2D.VideoController;
+	
+	import mx.core.FlexGlobals;
+	
+	//--------------------------------------------------------------------------
+	//
+	// Variable Declarations
+	//
+	//--------------------------------------------------------------------------
+	/**
+	 * The width of the "screen" / canvas
+	 */
+	public static const SCREEN_WIDTH:uint = 800;
+	
+	/**
+	 * The height of the "screen" / canvas
+	 */
+	public static const SCREEN_HEIGHT:uint = 600;
+	
+	[Bindable]
+	/**
+	 * @private
+	 * A preloadable source for the game's canvas
+	 */
+	private var startSource:BitmapData = 
+		new BitmapData(SCREEN_WIDTH, SCREEN_HEIGHT, false, 0x000000);
+	
+	[Bindable]
+	/**
+	 * The instance for the game
+	 */
+	private var birds:BirdsGame = BirdsGame.instance;		
+		
+	//--------------------------------------------------------------------------
+	//
+	// Event Handlers
+	//
+	//--------------------------------------------------------------------------
+		
+	/**
+	 * Every frame, update the canvas
+	 */
+	protected function gameEnterFrameHandler(event:Event):void {
+		canvas.update();
+		fps.text = canvas.fps.toPrecision(2);
+	}			
+	
+	/**
+	 * Enable the frame updates once creation is complete
+	 */
+	protected function onCreationCompleteHandler(event:Event):void {
+		FlexGlobals.topLevelApplication.addEventListener(Event.ENTER_FRAME, 
+			gameEnterFrameHandler);
+	}
+	
+	/**
+	 * Handle alignment changes
+	 */
+	public function sliderAlignmentHandler(event:Event):void {
+		birds.alignment = sliderAlignment.value;
+	}
+	
+	/**
+	 * Handle cohesion changes
+	 */
+	public function sliderCohesionHandler(event:Event):void {
+		birds.cohesion = sliderCohesion.value;
+	}
+	
+	/**
+	 * Handle separation changes
+	 */
+	public function sliderSeparationHandler(event:Event):void {
+		birds.separation = sliderSeparation.value;
+	}
+		
+	/**
+	 * Handle bird count changes
+	 */
+	public function sliderBirdCountHandler(event:Event):void {
+		birds.birdCount = sliderBirdCount.value;
+	}
+	
+	/**
+	 * Handle minimum speed changes
+	 */
+	public function sliderMinSpeedHandler(event:Event):void {
+		birds.minSpeed = sliderMinSpeed.value;			
+		if (sliderMinSpeed.value > sliderMaxSpeed.value) {
+			sliderMaxSpeed.value = sliderMinSpeed.value;
+			birds.maxSpeed = sliderMaxSpeed.value;
+		}
+			
+	}
+	
+	/**
+	 * Handle maximum speed changes
+	 */
+	public function sliderMaxSpeedHandler(event:Event):void {
+		birds.maxSpeed = sliderMaxSpeed.value;
+		if (sliderMaxSpeed.value < sliderMinSpeed.value) {
+			sliderMinSpeed.value = sliderMaxSpeed.value;
+			birds.minSpeed = sliderMinSpeed.value;
+		}
+	}
+
+	/**
+	 * Handle effect radius changes
+	 */
+	public function sliderRadiusHandler(event:Event):void {
+		birds.radius = sliderRadius.value;
+	}
+	
+	/**
+	 * Handle panel hide / show click
+	 */
+	public function hidePanelClickHandler(event:Event):void {
+		if (currentState == STATE_PANEL_HIDDEN.name)
+			currentState = STATE_PANEL_VISIBLE.name;
+		else
+			currentState = STATE_PANEL_HIDDEN.name;
+	}
+	]]>
+	</fx:Script>	
+	
+	<s:states>
+		<s:State id="STATE_PANEL_HIDDEN" name="panelHidden" />
+		<s:State id="STATE_PANEL_VISIBLE" name="panelVisible" />		
+	</s:states>
+
+	<s:Group>		
+		<graphics2D:VideoController id="canvas"																					
+									x="0" y="0" 
+									width="{SCREEN_WIDTH}" 
+									height="{SCREEN_HEIGHT}" 
+									source="{startSource}" 
+									game="{birds}"
+									clearColor="0X99FFFF" />	
+		
+		<s:Label id="fps" x="3" y="3" color="0x666666" text="{canvas.fps}" />
+		
+		<s:SkinnableContainer id="sliders" 							  
+			x="{SCREEN_WIDTH - 20}"
+			x.panelHidden="{SCREEN_WIDTH - 20}"
+			x.panelVisible="{SCREEN_WIDTH - (SCREEN_WIDTH / 4)}"
+			y="{(SCREEN_HEIGHT / 2) - (sliders.height / 2)}" 
+			width="20"
+			width.panelHidden="20"		
+			width.panelVisible="{SCREEN_WIDTH / 4}"
+			skinClass="skins.SlidersSkin">
+			
+			<s:layout>
+				<s:HorizontalLayout />
+			</s:layout>
+			
+			<s:Button rotation="-90" 
+					  label="Show Options Panel"
+					  label.panelHidden="Show Options Panel"
+					  label.panelVisible="Hide Options Panel"					  
+					  height="100%" width="20"
+					  fontSize="10"
+					  skinClass="skins.SliderButton" 
+					  click="hidePanelClickHandler(event)" />
+			
+			<s:VGroup
+				visible="false"
+				visible.panelHidden="false"
+				visible.panelVisible="true"
+				paddingTop="10" paddingBottom="10"
+				paddingLeft="10" paddingRight="10"
+				width="100%">
+				
+				<s:Label text="Alignment" />
+				<s:HSlider id="sliderAlignment"
+						   width="100%"
+						   minimum="1" maximum="50"
+						   value="{BirdsGame.STARTING_ALIGNMENT}"
+						   change="sliderAlignmentHandler(event)" />
+				
+				<s:Label text="Cohesion" />
+				<s:HSlider id="sliderCohesion"
+						   width="100%"
+						   minimum="1" maximum="50" 
+						   value="{BirdsGame.STARTING_COHESION}"
+						   change="sliderCohesionHandler(event)" />
+				
+				<s:Label text="Separation" />
+				<s:HSlider id="sliderSeparation"
+						   width="100%"
+						   minimum="1" maximum="50" 
+						   value="{BirdsGame.STARTING_SEPARATION}"
+						   change="sliderSeparationHandler(event)" />
+				
+				<s:Label text="Bird Count" />
+				<s:HSlider id="sliderBirdCount"
+						   width="100%"
+						   minimum="2" maximum="{BirdsGame.MAX_BIRDS}" 
+						   value="{BirdsGame.STARTING_BIRDS}"
+						   change="sliderBirdCountHandler(event)" />
+				
+				<s:Label text="Minimum Speed" />
+				<s:HSlider id="sliderMinSpeed"
+						   width="100%"
+						   minimum="1" maximum="50"
+						   value="{BirdsGame.STARTING_MIN_SPEED}"
+						   change="sliderMinSpeedHandler(event)" />
+				
+				<s:Label text="Maximum Speed" />
+				<s:HSlider id="sliderMaxSpeed"
+						   width="100%"
+						   minimum="1" maximum="50" 
+						   value="{BirdsGame.STARTING_MAX_SPEED}"
+						   change="sliderMaxSpeedHandler(event)" />
+				
+				<s:Label text="Effect Radius" />
+				<s:HSlider id="sliderRadius"
+						   width="100%"
+						   minimum="1" maximum="50" 
+						   value="{BirdsGame.STARTING_RADIUS}"
+						   change="sliderRadiusHandler(event)" />		
+			</s:VGroup>			
+		</s:SkinnableContainer>	
+	</s:Group>	
+</s:Application>
